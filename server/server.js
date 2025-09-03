@@ -23,7 +23,8 @@ app.use(express.json());
 mongoose.connect(MONGODB_URI)
   .then(() => {
     console.log('📦 Connected to MongoDB');
-    initializeData();
+    console.log('✅ Server ready - Data initialization skipped for now');
+    // initializeData(); // 暂时跳过数据初始化
   })
   .catch(err => {
     console.error('❌ MongoDB connection error:', err);
