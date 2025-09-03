@@ -86,10 +86,14 @@ passport.deserializeUser(async (id, done) => {
 });
 
 // Google OAuth策略
+const CALLBACK_URL = process.env.NODE_ENV === 'production'
+  ? 'https://easymovezurich-production.up.railway.app/api/auth/google/callback'
+  : 'http://localhost:3001/api/auth/google/callback';
+
 passport.use(new GoogleStrategy({
   clientID: GOOGLE_CLIENT_ID,
   clientSecret: GOOGLE_CLIENT_SECRET,
-  callbackURL: "/api/auth/google/callback"
+  callbackURL: CALLBACK_URL
 }, async (accessToken, refreshToken, profile, done) => {
   try {
     console.log('🔍 Google OAuth profile:', profile.id, profile.displayName, profile.emails[0].value);
