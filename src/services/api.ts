@@ -235,6 +235,11 @@ export const api = {
     return apiRequest('/driver/stats');
   },
 
+  // Google OAuth
+  getGoogleAuthUrl: () => {
+    return `${API_BASE_URL}/auth/google`;
+  },
+
   // 健康检查
   healthCheck: async () => {
     return apiRequest('/health');

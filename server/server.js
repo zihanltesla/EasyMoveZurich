@@ -5,6 +5,9 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 const path = require('path');
+const passport = require('passport');
+const GoogleStrategy = require('passport-google-oauth20').Strategy;
+const session = require('express-session');
 
 // 导入模型
 const User = require('./models/User');
@@ -16,6 +19,11 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-producti
 const MONGODB_URI =
   process.env.MONGODB_URI ||
   'mongodb+srv://zihan:uu3dBpT6Bfh5qZxX@cluster0.f3wzcj3.mongodb.net/?retryWrites=true&w=majority';
+
+// Google OAuth配置
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
+const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5174';
 
 mongoose
   .connect(MONGODB_URI, { dbName: 'easymove' })
@@ -42,8 +50,86 @@ mongoose
   });
 
 // 中间件
-app.use(cors());
+app.use(cors({
+  origin: [CLIENT_URL, 'https://easymovezurich-production.up.railway.app'],
+  credentials: true
+}));
 app.use(express.json());
+
+// Session配置
+app.use(session({
+  secret: JWT_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 24 * 60 * 60 * 1000 // 24小时
+  }
+}));
+
+// Passport初始化
+app.use(passport.initialize());
+app.use(passport.session());
+
+// Passport序列化用户
+passport.serializeUser((user, done) => {
+  done(null, user.id);
+});
+
+passport.deserializeUser(async (id, done) => {
+  try {
+    const user = await User.findById(id);
+    done(null, user);
+  } catch (error) {
+    done(error, null);
+  }
+});
+
+// Google OAuth策略
+passport.use(new GoogleStrategy({
+  clientID: GOOGLE_CLIENT_ID,
+  clientSecret: GOOGLE_CLIENT_SECRET,
+  callbackURL: "/api/auth/google/callback"
+}, async (accessToken, refreshToken, profile, done) => {
+  try {
+    console.log('🔍 Google OAuth profile:', profile.id, profile.displayName, profile.emails[0].value);
+
+    // 检查用户是否已存在
+    let user = await User.findOne({
+      $or: [
+        { googleId: profile.id },
+        { email: profile.emails[0].value }
+      ]
+    });
+
+    if (user) {
+      // 用户已存在，更新Google ID（如果没有的话）
+      if (!user.googleId) {
+        user.googleId = profile.id;
+        await user.save();
+      }
+      console.log('✅ Existing user logged in:', user.email);
+      return done(null, user);
+    }
+
+    // 创建新用户
+    user = new User({
+      googleId: profile.id,
+      name: profile.displayName,
+      email: profile.emails[0].value,
+      phone: '', // Google不提供电话号码
+      role: 'customer',
+      isEmailVerified: true // Google账户默认已验证
+    });
+
+    await user.save();
+    console.log('✅ New user created via Google:', user.email);
+    done(null, user);
+  } catch (error) {
+    console.error('❌ Google OAuth error:', error);
+    done(error, null);
+  }
+}));
 
 
 // 初始化示例数据
@@ -179,6 +265,38 @@ app.post('/api/register', async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 });
+
+// Google OAuth路由
+app.get('/api/auth/google',
+  passport.authenticate('google', { scope: ['profile', 'email'] })
+);
+
+app.get('/api/auth/google/callback',
+  passport.authenticate('google', { failureRedirect: '/login' }),
+  async (req, res) => {
+    try {
+      // 生成JWT token
+      const token = jwt.sign(
+        { userId: req.user._id, email: req.user.email, role: req.user.role },
+        JWT_SECRET,
+        { expiresIn: '24h' }
+      );
+
+      // 重定向到前端，带上token
+      const redirectUrl = `${CLIENT_URL}?token=${token}&user=${encodeURIComponent(JSON.stringify({
+        id: req.user._id,
+        name: req.user.name,
+        email: req.user.email,
+        role: req.user.role
+      }))}`;
+
+      res.redirect(redirectUrl);
+    } catch (error) {
+      console.error('❌ Google callback error:', error);
+      res.redirect(`${CLIENT_URL}?error=auth_failed`);
+    }
+  }
+);
 
 // 用户登录
 app.post('/api/login', async (req, res) => {
