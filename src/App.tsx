@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { AuthForm } from './components/AuthForm';
 import { ProfileManager } from './components/ProfileManager';
 import { CreateOrderForm } from './components/CreateOrderForm';
