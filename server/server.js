@@ -13,23 +13,38 @@ const Order = require('./models/Order');
 const app = express();
 const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://cluster0.f3wzcj3.mongodb.net/easymove';
+const MONGODB_URI =
+  process.env.MONGODB_URI ||
+  'mongodb+srv://zihan:uu3dBpT6Bfh5qZxX@cluster0.f3wzcj3.mongodb.net/?retryWrites=true&w=majority';
+
+mongoose
+  .connect(MONGODB_URI, { dbName: 'easymove' })
+  .then(async () => {
+    console.log('📦 Connected to MongoDB (easymove)');
+
+    // 打印连接信息，确认角色和库名
+    try {
+      const status = await mongoose.connection.db.admin().command({
+        connectionStatus: 1,
+        showPrivileges: true,
+      });
+      console.log('🔐 Authenticated roles:', status?.authInfo?.authenticatedUserRoles);
+      console.log('📚 Using DB:', mongoose.connection.db.databaseName);
+    } catch (e) {
+      console.warn('⚠️ Could not fetch connectionStatus:', e.message);
+    }
+
+    console.log('✅ Server ready - Data initialization skipped for now');
+  })
+  .catch((err) => {
+    console.error('❌ MongoDB connection error:', err);
+    process.exit(1);
+  });
 
 // 中间件
 app.use(cors());
 app.use(express.json());
 
-// 连接MongoDB
-mongoose.connect(MONGODB_URI)
-  .then(() => {
-    console.log('📦 Connected to MongoDB');
-    console.log('✅ Server ready - Data initialization skipped for now');
-    // initializeData(); // 暂时跳过数据初始化
-  })
-  .catch(err => {
-    console.error('❌ MongoDB connection error:', err);
-    process.exit(1);
-  });
 
 // 初始化示例数据
 async function initializeData() {
@@ -168,14 +183,22 @@ app.post('/api/register', async (req, res) => {
 // 用户登录
 app.post('/api/login', async (req, res) => {
   try {
+    console.log('🔐 Login attempt received');
+    console.log('Request body:', { email: req.body.email, hasPassword: !!req.body.password });
+
     const { email, password } = req.body;
 
     if (!email || !password) {
+      console.log('❌ Missing email or password');
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
+    console.log('🔍 Searching for user:', email);
     const user = await User.findOne({ email });
+    console.log('👤 User found:', user ? 'Yes' : 'No');
+
     if (!user) {
+      console.log('❌ User not found');
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
@@ -202,8 +225,13 @@ app.post('/api/login', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ error: 'Server error' });
+    console.error('❌ Login error:', error);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    res.status(500).json({
+      error: 'Server error',
+      details: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
   }
 });
 
