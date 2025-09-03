@@ -142,10 +142,42 @@ npm run preview
 npm run lint
 ```
 
+## 🚀 云端部署
+
+### 支持的部署平台
+- **Railway** (推荐) - 全栈部署，支持前后端
+- **Render** - 全栈部署，免费层可用
+- **Vercel** - 前端部署 + Railway后端
+
+### 快速部署
+```bash
+# 一键部署脚本
+./deploy.sh
+```
+
+### 环境变量配置
+部署时需要配置以下环境变量：
+```env
+MONGODB_URI=your_mongodb_atlas_connection_string
+JWT_SECRET=your_jwt_secret_key
+NODE_ENV=production
+```
+
+详细部署指南请查看 [DEPLOYMENT.md](./DEPLOYMENT.md)
+
+## ✅ 已实现功能
+
+- [x] 完整的用户认证系统 (JWT)
+- [x] 后端API集成 (Node.js + Express)
+- [x] MongoDB Atlas云数据库
+- [x] 司机接单系统
+- [x] 订单状态管理
+- [x] 实时数据同步
+- [x] 响应式设计
+- [x] 角色权限管理
+
 ## 📝 待实现功能
 
-- [ ] 真实的用户认证系统
-- [ ] 后端API集成
 - [ ] 地图集成（Google Maps/OpenStreetMap）
 - [ ] 实时位置跟踪
 - [ ] 推送通知

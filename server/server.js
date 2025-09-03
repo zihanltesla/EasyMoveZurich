@@ -1,90 +1,80 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const sqlite3 = require('sqlite3').verbose();
-const { v4: uuidv4 } = require('uuid');
+const mongoose = require('mongoose');
 const path = require('path');
+
+// 导入模型
+const User = require('./models/User');
+const Order = require('./models/Order');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://cluster0.f3wzcj3.mongodb.net/easymove';
 
 // 中间件
 app.use(cors());
 app.use(express.json());
 
-// 数据库初始化
-const dbPath = path.join(__dirname, 'easymove.db');
-const db = new sqlite3.Database(dbPath);
-
-// 创建用户表
-db.serialize(() => {
-  db.run(`
-    CREATE TABLE IF NOT EXISTS users (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      email TEXT UNIQUE NOT NULL,
-      phone TEXT NOT NULL,
-      password TEXT NOT NULL,
-      role TEXT NOT NULL CHECK (role IN ('customer', 'driver')),
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-
-  // 创建司机额外信息表
-  db.run(`
-    CREATE TABLE IF NOT EXISTS driver_info (
-      user_id TEXT PRIMARY KEY,
-      license_number TEXT,
-      vehicle_make TEXT,
-      vehicle_model TEXT,
-      vehicle_year INTEGER,
-      vehicle_color TEXT,
-      vehicle_plate TEXT,
-      vehicle_capacity INTEGER,
-      rating REAL DEFAULT 5.0,
-      total_trips INTEGER DEFAULT 0,
-      is_available BOOLEAN DEFAULT 1,
-      FOREIGN KEY (user_id) REFERENCES users (id)
-    )
-  `);
-
-  // 插入一些示例数据
-  const sampleUsers = [
-    {
-      id: uuidv4(),
-      name: 'Demo Customer',
-      email: 'customer@example.com',
-      phone: '+41 79 123 4567',
-      password: bcrypt.hashSync('password123', 10),
-      role: 'customer'
-    },
-    {
-      id: uuidv4(),
-      name: 'Hans Mueller',
-      email: 'hans.mueller@example.com',
-      phone: '+41 79 234 5678',
-      password: bcrypt.hashSync('password123', 10),
-      role: 'driver'
-    }
-  ];
-
-  sampleUsers.forEach(user => {
-    db.run(`
-      INSERT OR IGNORE INTO users (id, name, email, phone, password, role)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `, [user.id, user.name, user.email, user.phone, user.password, user.role]);
-
-    if (user.role === 'driver') {
-      db.run(`
-        INSERT OR IGNORE INTO driver_info (user_id, license_number, vehicle_make, vehicle_model, vehicle_year, vehicle_color, vehicle_plate, vehicle_capacity)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `, [user.id, 'CH-12345678', 'Mercedes-Benz', 'E-Class', 2022, 'Black', 'ZH 123456', 4]);
-    }
+// 连接MongoDB
+mongoose.connect(MONGODB_URI)
+  .then(() => {
+    console.log('📦 Connected to MongoDB');
+    initializeData();
+  })
+  .catch(err => {
+    console.error('❌ MongoDB connection error:', err);
+    process.exit(1);
   });
-});
+
+// 初始化示例数据
+async function initializeData() {
+  try {
+    const userCount = await User.countDocuments();
+    if (userCount === 0) {
+      console.log('🌱 Initializing sample data...');
+      
+      const customerPassword = await bcrypt.hash('password123', 10);
+      const customer = new User({
+        name: 'Demo Customer',
+        email: 'customer@example.com',
+        phone: '+41 79 123 4567',
+        password: customerPassword,
+        role: 'customer'
+      });
+      await customer.save();
+
+      const driverPassword = await bcrypt.hash('password123', 10);
+      const driver = new User({
+        name: 'Hans Mueller',
+        email: 'hans.mueller@example.com',
+        phone: '+41 79 234 5678',
+        password: driverPassword,
+        role: 'driver',
+        driverInfo: {
+          licenseNumber: 'CH-12345678',
+          vehicleMake: 'Mercedes-Benz',
+          vehicleModel: 'E-Class',
+          vehicleYear: 2022,
+          vehicleColor: 'Black',
+          vehiclePlate: 'ZH 123456',
+          vehicleCapacity: 4,
+          rating: 4.8,
+          totalTrips: 100,
+          isAvailable: true
+        }
+      });
+      await driver.save();
+
+      console.log('✅ Sample data initialized');
+    }
+  } catch (error) {
+    console.error('❌ Error initializing data:', error);
+  }
+}
 
 // JWT验证中间件
 const authenticateToken = (req, res, next) => {
@@ -111,72 +101,71 @@ app.post('/api/register', async (req, res) => {
   try {
     const { name, email, phone, password, role } = req.body;
 
-    // 验证必填字段
     if (!name || !email || !phone || !password || !role) {
       return res.status(400).json({ error: 'All fields are required' });
     }
 
-    // 验证角色
     if (!['customer', 'driver'].includes(role)) {
       return res.status(400).json({ error: 'Invalid role' });
     }
 
-    // 检查邮箱是否已存在
-    db.get('SELECT id FROM users WHERE email = ?', [email], async (err, row) => {
-      if (err) {
-        return res.status(500).json({ error: 'Database error' });
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ error: 'Email already exists' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const userData = {
+      name,
+      email,
+      phone,
+      password: hashedPassword,
+      role
+    };
+
+    if (role === 'driver') {
+      userData.driverInfo = {
+        licenseNumber: '',
+        vehicleMake: '',
+        vehicleModel: '',
+        vehicleYear: new Date().getFullYear(),
+        vehicleColor: '',
+        vehiclePlate: '',
+        vehicleCapacity: 4,
+        rating: 5.0,
+        totalTrips: 0,
+        isAvailable: true
+      };
+    }
+
+    const user = new User(userData);
+    await user.save();
+
+    const token = jwt.sign(
+      { userId: user._id, email: user.email, role: user.role },
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    res.status(201).json({
+      message: 'User created successfully',
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role
       }
-      if (row) {
-        return res.status(400).json({ error: 'Email already exists' });
-      }
-
-      // 创建新用户
-      const userId = uuidv4();
-      const hashedPassword = await bcrypt.hash(password, 10);
-
-      db.run(`
-        INSERT INTO users (id, name, email, phone, password, role)
-        VALUES (?, ?, ?, ?, ?, ?)
-      `, [userId, name, email, phone, hashedPassword, role], function(err) {
-        if (err) {
-          return res.status(500).json({ error: 'Failed to create user' });
-        }
-
-        // 如果是司机，创建司机信息记录
-        if (role === 'driver') {
-          db.run(`
-            INSERT INTO driver_info (user_id)
-            VALUES (?)
-          `, [userId]);
-        }
-
-        // 生成JWT token
-        const token = jwt.sign(
-          { userId, email, role },
-          JWT_SECRET,
-          { expiresIn: '24h' }
-        );
-
-        res.status(201).json({
-          message: 'User created successfully',
-          token,
-          user: {
-            id: userId,
-            name,
-            email,
-            phone,
-            role
-          }
-        });
-      });
     });
   } catch (error) {
+    console.error('Registration error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });
 
 // 用户登录
-app.post('/api/login', (req, res) => {
+app.post('/api/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -184,107 +173,503 @@ app.post('/api/login', (req, res) => {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    db.get('SELECT * FROM users WHERE email = ?', [email], async (err, user) => {
-      if (err) {
-        return res.status(500).json({ error: 'Database error' });
-      }
-      if (!user) {
-        return res.status(401).json({ error: 'Invalid credentials' });
-      }
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
 
-      const isValidPassword = await bcrypt.compare(password, user.password);
-      if (!isValidPassword) {
-        return res.status(401).json({ error: 'Invalid credentials' });
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    if (!isValidPassword) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    const token = jwt.sign(
+      { userId: user._id, email: user.email, role: user.role },
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    res.json({
+      message: 'Login successful',
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role
       }
-
-      // 生成JWT token
-      const token = jwt.sign(
-        { userId: user.id, email: user.email, role: user.role },
-        JWT_SECRET,
-        { expiresIn: '24h' }
-      );
-
-      res.json({
-        message: 'Login successful',
-        token,
-        user: {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          phone: user.phone,
-          role: user.role
-        }
-      });
     });
   } catch (error) {
+    console.error('Login error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });
 
 // 获取用户信息
-app.get('/api/user/profile', authenticateToken, (req, res) => {
-  db.get('SELECT id, name, email, phone, role, created_at FROM users WHERE id = ?', [req.user.userId], (err, user) => {
-    if (err) {
-      return res.status(500).json({ error: 'Database error' });
-    }
+app.get('/api/user/profile', authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId).select('-password');
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    res.json({ user });
-  });
+    res.json({ 
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        created_at: user.createdAt
+      }
+    });
+  } catch (error) {
+    console.error('Profile error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
 });
 
 // 更新用户信息
-app.put('/api/user/profile', authenticateToken, (req, res) => {
+app.put('/api/user/profile', authenticateToken, async (req, res) => {
   try {
     const { name, phone } = req.body;
-    const userId = req.user.userId;
 
     if (!name || !phone) {
       return res.status(400).json({ error: 'Name and phone are required' });
     }
 
-    db.run(`
-      UPDATE users 
-      SET name = ?, phone = ?, updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `, [name, phone, userId], function(err) {
-      if (err) {
-        return res.status(500).json({ error: 'Failed to update user' });
-      }
+    const user = await User.findByIdAndUpdate(
+      req.user.userId,
+      { name, phone },
+      { new: true }
+    ).select('-password');
 
-      if (this.changes === 0) {
-        return res.status(404).json({ error: 'User not found' });
-      }
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
 
-      res.json({ message: 'Profile updated successfully' });
+    res.json({ message: 'Profile updated successfully' });
+  } catch (error) {
+    console.error('Update profile error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// 创建新订单
+app.post('/api/orders', authenticateToken, async (req, res) => {
+  try {
+    const {
+      customerName,
+      customerPhone,
+      customerEmail,
+      pickupAddress,
+      pickupCity,
+      pickupPostalCode,
+      destinationAddress,
+      destinationCity,
+      destinationPostalCode,
+      pickupDateTime,
+      flightNumber,
+      airline,
+      passengerCount,
+      luggageCount,
+      specialRequirements,
+      notes
+    } = req.body;
+
+    if (!customerName || !customerPhone || !customerEmail || !pickupAddress || 
+        !destinationAddress || !pickupDateTime || !passengerCount) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // 计算预估价格
+    const basePrice = 35;
+    const distanceMultiplier = Math.random() * 0.5 + 0.8;
+    const passengerMultiplier = passengerCount > 2 ? 1.2 : 1;
+    const estimatedPrice = Math.round(basePrice * distanceMultiplier * passengerMultiplier);
+
+    const order = new Order({
+      customerId: req.user.userId,
+      customerName,
+      customerPhone,
+      customerEmail,
+      pickupAddress,
+      pickupCity: pickupCity || 'Zurich',
+      pickupPostalCode,
+      destinationAddress,
+      destinationCity: destinationCity || 'Zurich',
+      destinationPostalCode,
+      pickupDateTime: new Date(pickupDateTime),
+      flightNumber,
+      airline,
+      passengerCount,
+      luggageCount: luggageCount || 0,
+      specialRequirements,
+      notes,
+      estimatedPrice
+    });
+
+    await order.save();
+
+    res.status(201).json({
+      message: 'Order created successfully',
+      order: {
+        id: order._id,
+        estimatedPrice: order.estimatedPrice,
+        status: order.status
+      }
     });
   } catch (error) {
+    console.error('Create order error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// 获取订单列表
+app.get('/api/orders', authenticateToken, async (req, res) => {
+  try {
+    const { status, role } = req.query;
+    const userId = req.user.userId;
+    const userRole = req.user.role;
+
+    let query = {};
+    let sortOptions = { createdAt: -1 };
+
+    // 根据用户角色过滤订单
+    if (userRole === 'customer') {
+      query.customerId = userId;
+    } else if (userRole === 'driver') {
+      if (status === 'available') {
+        // 司机查看可接订单 - 只显示待接单且未分配司机的订单
+        query.status = 'pending';
+        query.driverId = null;
+        // 按接机时间排序，最近的在前面
+        sortOptions = { pickupDateTime: 1 };
+      } else {
+        // 司机查看自己的订单
+        query.driverId = userId;
+      }
+    }
+
+    // 状态过滤
+    if (status && status !== 'available') {
+      query.status = status;
+    }
+
+    const orders = await Order.find(query)
+      .populate('driverId', 'name phone email driverInfo')
+      .populate('customerId', 'name phone email')
+      .sort(sortOptions);
+
+    // 为司机添加额外的订单信息
+    const enrichedOrders = orders.map(order => {
+      const orderObj = order.toObject();
+
+      // 计算距离接机时间
+      if (orderObj.pickupDateTime) {
+        const now = new Date();
+        const pickupTime = new Date(orderObj.pickupDateTime);
+        const timeDiff = pickupTime.getTime() - now.getTime();
+        const hoursUntilPickup = Math.round(timeDiff / (1000 * 60 * 60));
+        orderObj.hoursUntilPickup = hoursUntilPickup;
+        orderObj.isUrgent = hoursUntilPickup <= 2 && hoursUntilPickup > 0;
+      }
+
+      return orderObj;
+    });
+
+    res.json({
+      orders: enrichedOrders,
+      totalCount: enrichedOrders.length,
+      availableCount: userRole === 'driver' && status === 'available' ? enrichedOrders.length : undefined
+    });
+  } catch (error) {
+    console.error('Get orders error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// 接受订单（司机）
+app.put('/api/orders/:id/accept', authenticateToken, async (req, res) => {
+  try {
+    const orderId = req.params.id;
+    const driverId = req.user.userId;
+    const userRole = req.user.role;
+
+    if (userRole !== 'driver') {
+      return res.status(403).json({ error: 'Only drivers can accept orders' });
+    }
+
+    // 检查司机是否有其他进行中的订单
+    const activeOrder = await Order.findOne({
+      driverId,
+      status: { $in: ['accepted', 'in_progress'] }
+    });
+
+    if (activeOrder) {
+      return res.status(400).json({
+        error: 'You already have an active order. Please complete it before accepting a new one.',
+        activeOrderId: activeOrder._id
+      });
+    }
+
+    // 获取司机信息
+    const driver = await User.findById(driverId);
+    if (!driver || !driver.driverInfo) {
+      return res.status(400).json({ error: 'Driver profile incomplete. Please update your driver information.' });
+    }
+
+    // 检查司机是否可用
+    if (!driver.driverInfo.isAvailable) {
+      return res.status(400).json({ error: 'Driver is currently unavailable' });
+    }
+
+    const order = await Order.findOneAndUpdate(
+      { _id: orderId, status: 'pending', driverId: null },
+      {
+        driverId,
+        status: 'accepted',
+        acceptedAt: new Date()
+      },
+      { new: true }
+    ).populate('customerId', 'name phone email');
+
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found or already accepted by another driver' });
+    }
+
+    // 更新司机的总接单数
+    await User.findByIdAndUpdate(driverId, {
+      $inc: { 'driverInfo.totalTrips': 1 }
+    });
+
+    // 返回完整的订单信息，包括客户信息
+    const enrichedOrder = {
+      ...order.toObject(),
+      driverInfo: {
+        name: driver.name,
+        phone: driver.phone,
+        vehicleMake: driver.driverInfo.vehicleMake,
+        vehicleModel: driver.driverInfo.vehicleModel,
+        vehicleColor: driver.driverInfo.vehicleColor,
+        vehiclePlate: driver.driverInfo.vehiclePlate,
+        rating: driver.driverInfo.rating
+      }
+    };
+
+    res.json({
+      message: 'Order accepted successfully',
+      order: enrichedOrder,
+      customerInfo: {
+        name: order.customerId.name,
+        phone: order.customerId.phone,
+        email: order.customerId.email
+      }
+    });
+  } catch (error) {
+    console.error('Accept order error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// 更新订单状态
+app.put('/api/orders/:id/status', authenticateToken, async (req, res) => {
+  try {
+    const orderId = req.params.id;
+    const { status } = req.body;
+    const userId = req.user.userId;
+
+    if (!['in_progress', 'completed', 'cancelled'].includes(status)) {
+      return res.status(400).json({ error: 'Invalid status' });
+    }
+
+    const updateData = { status };
+    if (status === 'completed') {
+      updateData.completedAt = new Date();
+    }
+
+    const order = await Order.findOneAndUpdate(
+      {
+        _id: orderId,
+        $or: [
+          { customerId: userId },
+          { driverId: userId }
+        ]
+      },
+      updateData,
+      { new: true }
+    );
+
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found or access denied' });
+    }
+
+    res.json({ message: 'Order status updated successfully', order });
+  } catch (error) {
+    console.error('Update order status error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// 司机设置可用状态
+app.put('/api/driver/availability', authenticateToken, async (req, res) => {
+  try {
+    const driverId = req.user.userId;
+    const userRole = req.user.role;
+    const { isAvailable } = req.body;
+
+    if (userRole !== 'driver') {
+      return res.status(403).json({ error: 'Only drivers can update availability' });
+    }
+
+    if (typeof isAvailable !== 'boolean') {
+      return res.status(400).json({ error: 'isAvailable must be a boolean value' });
+    }
+
+    // 如果设置为不可用，检查是否有进行中的订单
+    if (!isAvailable) {
+      const activeOrder = await Order.findOne({
+        driverId,
+        status: { $in: ['accepted', 'in_progress'] }
+      });
+
+      if (activeOrder) {
+        return res.status(400).json({
+          error: 'Cannot set unavailable while you have active orders',
+          activeOrderId: activeOrder._id
+        });
+      }
+    }
+
+    const driver = await User.findByIdAndUpdate(
+      driverId,
+      { 'driverInfo.isAvailable': isAvailable },
+      { new: true }
+    ).select('-password');
+
+    if (!driver) {
+      return res.status(404).json({ error: 'Driver not found' });
+    }
+
+    res.json({
+      message: `Driver availability updated to ${isAvailable ? 'available' : 'unavailable'}`,
+      isAvailable: driver.driverInfo.isAvailable
+    });
+  } catch (error) {
+    console.error('Update availability error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// 获取司机统计信息
+app.get('/api/driver/stats', authenticateToken, async (req, res) => {
+  try {
+    const driverId = req.user.userId;
+    const userRole = req.user.role;
+
+    if (userRole !== 'driver') {
+      return res.status(403).json({ error: 'Only drivers can access driver stats' });
+    }
+
+    // 获取司机信息
+    const driver = await User.findById(driverId).select('-password');
+    if (!driver) {
+      return res.status(404).json({ error: 'Driver not found' });
+    }
+
+    // 获取订单统计
+    const totalOrders = await Order.countDocuments({ driverId });
+    const completedOrders = await Order.countDocuments({ driverId, status: 'completed' });
+    const activeOrders = await Order.countDocuments({
+      driverId,
+      status: { $in: ['accepted', 'in_progress'] }
+    });
+
+    // 计算本月收入（简化版本）
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+
+    const monthlyOrders = await Order.find({
+      driverId,
+      status: 'completed',
+      completedAt: { $gte: startOfMonth }
+    });
+
+    const monthlyEarnings = monthlyOrders.reduce((total, order) => {
+      return total + (order.finalPrice || order.estimatedPrice);
+    }, 0);
+
+    // 获取最近的订单
+    const recentOrders = await Order.find({ driverId })
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .populate('customerId', 'name');
+
+    res.json({
+      driverInfo: {
+        name: driver.name,
+        rating: driver.driverInfo.rating,
+        totalTrips: driver.driverInfo.totalTrips,
+        isAvailable: driver.driverInfo.isAvailable,
+        vehicleInfo: {
+          make: driver.driverInfo.vehicleMake,
+          model: driver.driverInfo.vehicleModel,
+          color: driver.driverInfo.vehicleColor,
+          plate: driver.driverInfo.vehiclePlate
+        }
+      },
+      stats: {
+        totalOrders,
+        completedOrders,
+        activeOrders,
+        completionRate: totalOrders > 0 ? Math.round((completedOrders / totalOrders) * 100) : 0,
+        monthlyEarnings: Math.round(monthlyEarnings),
+        monthlyTrips: monthlyOrders.length
+      },
+      recentOrders: recentOrders.map(order => ({
+        id: order._id,
+        customerName: order.customerId?.name || order.customerName,
+        pickupAddress: order.pickupAddress,
+        destinationAddress: order.destinationAddress,
+        status: order.status,
+        price: order.finalPrice || order.estimatedPrice,
+        date: order.createdAt
+      }))
+    });
+  } catch (error) {
+    console.error('Get driver stats error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });
 
 // 获取所有用户（管理员功能）
-app.get('/api/users', authenticateToken, (req, res) => {
-  db.all(`
-    SELECT u.id, u.name, u.email, u.phone, u.role, u.created_at,
-           d.license_number, d.vehicle_make, d.vehicle_model, d.rating, d.total_trips, d.is_available
-    FROM users u
-    LEFT JOIN driver_info d ON u.id = d.user_id
-    ORDER BY u.created_at DESC
-  `, (err, users) => {
-    if (err) {
-      return res.status(500).json({ error: 'Database error' });
-    }
+app.get('/api/users', authenticateToken, async (req, res) => {
+  try {
+    const users = await User.find().select('-password').sort({ createdAt: -1 });
     res.json({ users });
-  });
+  } catch (error) {
+    console.error('Get users error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
 });
 
 // 健康检查
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'EasyMove Server is running' });
 });
+
+// 生产环境下服务静态文件
+if (process.env.NODE_ENV === 'production') {
+  // 服务静态文件
+  app.use(express.static(path.join(__dirname, 'public')));
+
+  // 所有非API路由都返回index.html (SPA路由支持)
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  });
+}
 
 // 启动服务器
 app.listen(PORT, () => {
@@ -295,12 +680,8 @@ app.listen(PORT, () => {
 // 优雅关闭
 process.on('SIGINT', () => {
   console.log('\n🛑 Shutting down server...');
-  db.close((err) => {
-    if (err) {
-      console.error('Error closing database:', err);
-    } else {
-      console.log('📦 Database connection closed.');
-    }
+  mongoose.connection.close(() => {
+    console.log('📦 MongoDB connection closed.');
     process.exit(0);
   });
 });

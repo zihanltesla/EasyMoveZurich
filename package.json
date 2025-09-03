@@ -7,7 +7,10 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start": "cd server && npm start",
+    "install:all": "npm install && cd server && npm install",
+    "build:production": "npm run build && cd server && npm install --production"
   },
   "dependencies": {
     "@types/react-router-dom": "^5.3.3",
@@ -35,5 +38,9 @@
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.39.1",
     "vite": "^7.1.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
   }
 }

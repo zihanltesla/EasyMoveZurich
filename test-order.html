@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>订单测试页面</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚗 EasyMove 订单测试</h1>
+        
+        <div class="form-group">
+            <label for="email">邮箱:</label>
+            <input type="email" id="email" value="customer@example.com">
+        </div>
+        
+        <div class="form-group">
+            <label for="password">密码:</label>
+            <input type="password" id="password" value="password123">
+        </div>
+        
+        <button onclick="login()">登录</button>
+        <button onclick="createTestOrder()">创建测试订单</button>
+        <button onclick="getOrders()">获取订单列表</button>
+        <button onclick="clearResult()">清除结果</button>
+        
+        <div id="result" class="result" style="display: none;"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3001/api';
+        let authToken = '';
+
+        function showResult(message, isError = false) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.textContent = message;
+            resultDiv.className = `result ${isError ? 'error' : 'success'}`;
+            resultDiv.style.display = 'block';
+        }
+
+        function clearResult() {
+            document.getElementById('result').style.display = 'none';
+        }
+
+        async function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const response = await fetch(`${API_BASE}/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    authToken = data.token;
+                    showResult(`登录成功！\n用户: ${data.user.name}\n角色: ${data.user.role}\nToken: ${authToken.substring(0, 50)}...`);
+                } else {
+                    showResult(`登录失败: ${data.error}`, true);
+                }
+            } catch (error) {
+                showResult(`登录错误: ${error.message}`, true);
+            }
+        }
+
+        async function createTestOrder() {
+            if (!authToken) {
+                showResult('请先登录！', true);
+                return;
+            }
+            
+            const orderData = {
+                customerName: 'Test Customer',
+                customerPhone: '+41 79 123 4567',
+                customerEmail: 'test@example.com',
+                pickupAddress: 'Zurich Airport Terminal 1',
+                destinationAddress: 'Bahnhofstrasse 1, Zurich',
+                pickupDateTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 明天
+                passengerCount: 2,
+                luggageCount: 1
+            };
+            
+            try {
+                const response = await fetch(`${API_BASE}/orders`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(orderData)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult(`订单创建成功！\n订单ID: ${data.order.id}\n预估价格: CHF ${data.order.estimatedPrice}\n状态: ${data.order.status}`);
+                } else {
+                    showResult(`创建订单失败: ${data.error}`, true);
+                }
+            } catch (error) {
+                showResult(`创建订单错误: ${error.message}`, true);
+            }
+        }
+
+        async function getOrders() {
+            if (!authToken) {
+                showResult('请先登录！', true);
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/orders`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    const orders = data.orders || [];
+                    if (orders.length === 0) {
+                        showResult('暂无订单');
+                    } else {
+                        const orderList = orders.map(order => 
+                            `订单 #${order.id.slice(-8)}: ${order.customerName} - ${order.status} - CHF ${order.estimatedPrice}`
+                        ).join('\n');
+                        showResult(`找到 ${orders.length} 个订单:\n${orderList}`);
+                    }
+                } else {
+                    showResult(`获取订单失败: ${data.error}`, true);
+                }
+            } catch (error) {
+                showResult(`获取订单错误: ${error.message}`, true);
+            }
+        }
+    </script>
+</body>
+</html>

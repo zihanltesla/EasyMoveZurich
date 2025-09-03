@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { AuthForm } from './components/AuthForm';
 import { ProfileManager } from './components/ProfileManager';
+import { CreateOrderForm } from './components/CreateOrderForm';
+import { OrderListView } from './components/OrderListView';
 import { api } from './services/api';
+import { DriverDashboard } from './components/DriverDashboard';
 
 interface User {
   id: string;
@@ -13,7 +16,7 @@ interface User {
 
 function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [currentView, setCurrentView] = useState<'dashboard' | 'profile'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'profile' | 'create-order' | 'orders' | 'driver-dashboard'>('dashboard');
   const [isLoading, setIsLoading] = useState(true);
 
   // 检查是否有存储的token
@@ -49,6 +52,10 @@ function App() {
     setCurrentUser(updatedUser);
   };
 
+  const handleOrderCreated = () => {
+    setCurrentView('dashboard');
+  };
+
   // 加载状态
   if (isLoading) {
     return (
@@ -82,6 +89,35 @@ function App() {
   }
 
   // 已登录状态 - 根据当前视图显示不同内容
+  if (currentView === 'create-order') {
+    return (
+      <CreateOrderForm
+        currentUser={currentUser}
+        onOrderCreated={handleOrderCreated}
+        onCancel={() => setCurrentView('dashboard')}
+      />
+    );
+  }
+
+  if (currentView === 'orders') {
+    return (
+      <OrderListView
+        currentUser={currentUser}
+        onBack={() => setCurrentView('dashboard')}
+      />
+    );
+  }
+
+  if (currentView === 'driver-dashboard') {
+    return (
+      <DriverDashboard
+        currentUser={currentUser}
+        onViewOrders={() => setCurrentView('orders')}
+        onLogout={handleLogout}
+      />
+    );
+  }
+
   if (currentView === 'profile') {
     return (
       <div>
@@ -198,7 +234,7 @@ function App() {
                 <li>🔍 搜索历史订单</li>
                 <li>⭐ 评价司机服务</li>
               </ul>
-              <div style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem' }}>
+              <div style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                 <button
                   style={{
                     padding: '0.75rem 1.5rem',
@@ -208,9 +244,22 @@ function App() {
                     borderRadius: '0.5rem',
                     cursor: 'pointer'
                   }}
-                  onClick={() => alert('预约接机功能即将推出！')}
+                  onClick={() => setCurrentView('create-order')}
                 >
                   预约接机
+                </button>
+                <button
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    backgroundColor: '#10b981',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '0.5rem',
+                    cursor: 'pointer'
+                  }}
+                  onClick={() => setCurrentView('orders')}
+                >
+                  {currentUser.role === 'customer' ? '我的订单' : '订单管理'}
                 </button>
                 <button
                   style={{
@@ -246,9 +295,9 @@ function App() {
                     borderRadius: '0.5rem',
                     cursor: 'pointer'
                   }}
-                  onClick={() => alert('司机接单功能即将推出！')}
+                  onClick={() => setCurrentView('driver-dashboard')}
                 >
-                  查看可接订单
+                  司机控制台
                 </button>
                 <button
                   style={{
