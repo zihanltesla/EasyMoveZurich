@@ -5,7 +5,7 @@ import { CreateOrderForm } from './components/CreateOrderForm';
 import { OrderListView } from './components/OrderListView';
 import { api } from './services/api';
 import { DriverDashboard } from './components/DriverDashboard';
-import { I18nProvider } from './i18n/i18nContext';
+import { I18nProvider, useTranslation } from './i18n/i18nContext';
 
 interface User {
   id: string;
@@ -16,6 +16,7 @@ interface User {
 }
 
 function AppContent() {
+  const { t } = useTranslation();
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [currentView, setCurrentView] = useState<'dashboard' | 'profile' | 'create-order' | 'orders' | 'driver-dashboard'>('dashboard');
   const [isLoading, setIsLoading] = useState(true);
@@ -78,7 +79,7 @@ function AppContent() {
             animation: 'spin 1s linear infinite',
             margin: '0 auto 1rem'
           }} />
-          <p style={{ color: '#6b7280' }}>加载中...</p>
+          <p style={{ color: '#6b7280' }}>{t.common.loading}</p>
         </div>
       </div>
     );
@@ -173,9 +174,9 @@ function AppContent() {
       <nav style={{ backgroundColor: 'white', borderBottom: '1px solid #e5e7eb', padding: '1rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <h1 style={{ margin: 0, color: '#2563eb' }}>EasyMove Zurich</h1>
+            <h1 style={{ margin: 0, color: '#2563eb' }}>{t.app.title}</h1>
             <p style={{ margin: 0, fontSize: '0.875rem', color: '#6b7280' }}>
-              {currentUser.role === 'driver' ? '司机端' : '客户端'}
+              {currentUser.role === 'driver' ? t.nav.driverDashboard : t.nav.dashboard}
             </p>
           </div>
 
@@ -223,7 +224,7 @@ function AppContent() {
           boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
         }}>
           <h2 style={{ marginBottom: '1rem' }}>
-            欢迎，{currentUser.name}！
+            {t.app.welcome}, {currentUser.name}！
           </h2>
 
           {currentUser.role === 'customer' ? (
@@ -273,7 +274,7 @@ function AppContent() {
                   }}
                   onClick={() => setCurrentView('profile')}
                 >
-                  管理账户
+                  {t.nav.profile}
                 </button>
               </div>
             </div>
@@ -298,7 +299,7 @@ function AppContent() {
                   }}
                   onClick={() => setCurrentView('driver-dashboard')}
                 >
-                  司机控制台
+                  {t.nav.driverDashboard}
                 </button>
                 <button
                   style={{
@@ -311,7 +312,7 @@ function AppContent() {
                   }}
                   onClick={() => setCurrentView('profile')}
                 >
-                  管理账户
+                  {t.nav.profile}
                 </button>
               </div>
             </div>

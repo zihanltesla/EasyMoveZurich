@@ -50,6 +50,21 @@ export function LanguageSwitcher({ style, variant = 'default' }: LanguageSwitche
         >
           EN
         </button>
+        <button
+          onClick={() => handleLanguageChange('de')}
+          style={{
+            padding: '0.25rem 0.5rem',
+            border: 'none',
+            borderRadius: '0.25rem',
+            backgroundColor: language === 'de' ? 'rgba(255, 255, 255, 0.2)' : 'transparent',
+            color: 'white',
+            fontSize: '0.875rem',
+            cursor: 'pointer',
+            transition: 'all 0.2s'
+          }}
+        >
+          DE
+        </button>
       </div>
     );
   }
@@ -101,6 +116,25 @@ export function LanguageSwitcher({ style, variant = 'default' }: LanguageSwitche
         }}
       >
         English
+      </button>
+      <button
+        onClick={() => handleLanguageChange('de')}
+        style={{
+          padding: '0.5rem 1rem',
+          border: 'none',
+          borderRadius: '0.25rem',
+          backgroundColor: language === 'de' ? 'rgba(255, 255, 255, 0.9)' : 'transparent',
+          color: language === 'de' ? '#374151' : 'rgba(255, 255, 255, 0.8)',
+          fontSize: '0.875rem',
+          fontWeight: '500',
+          cursor: 'pointer',
+          transition: 'all 0.3s ease',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem'
+        }}
+      >
+        Deutsch
       </button>
     </div>
   );

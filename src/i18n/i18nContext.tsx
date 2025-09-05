@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Translations, zhTranslations, enTranslations } from './translations';
+import { Translations, zhTranslations, enTranslations, deTranslations } from './translations';
 
-export type Language = 'zh' | 'en';
+export type Language = 'zh' | 'en' | 'de';
 
 interface I18nContextType {
   language: Language;
@@ -23,7 +23,20 @@ export function I18nProvider({ children }: I18nProviderProps) {
   });
 
   // 根据当前语言获取翻译
-  const translations = language === 'zh' ? zhTranslations : enTranslations;
+  const getTranslations = (lang: Language): Translations => {
+    switch (lang) {
+      case 'zh':
+        return zhTranslations;
+      case 'en':
+        return enTranslations;
+      case 'de':
+        return deTranslations;
+      default:
+        return zhTranslations;
+    }
+  };
+
+  const translations = getTranslations(language);
 
   // 保存语言设置到localStorage
   useEffect(() => {
