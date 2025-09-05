@@ -81,7 +81,7 @@ export function LanguageSwitcher({ style, variant = 'default' }: LanguageSwitche
           gap: '0.5rem'
         }}
       >
-        🇨🇳 中文
+        中文
       </button>
       <button
         onClick={() => handleLanguageChange('en')}
@@ -100,7 +100,7 @@ export function LanguageSwitcher({ style, variant = 'default' }: LanguageSwitche
           gap: '0.5rem'
         }}
       >
-        🇺🇸 English
+        English
       </button>
     </div>
   );
