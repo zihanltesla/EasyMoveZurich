@@ -42,7 +42,7 @@ export function AuthForm({ onLogin }: AuthFormProps) {
         onLogin(user);
         window.history.replaceState({}, document.title, window.location.pathname);
       } catch (error) {
-        console.error('解析Google登录数据失败:', error);
+        console.error('Google login data parsing failed:', error);
         setErrors({ general: t.validation.serverError });
       }
     }
@@ -67,28 +67,28 @@ export function AuthForm({ onLogin }: AuthFormProps) {
     const newErrors: Record<string, string> = {};
 
     if (!formData.email.trim()) {
-      newErrors.email = '请输入邮箱地址';
+      newErrors.email = t.validation.required;
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = '请输入有效的邮箱地址';
+      newErrors.email = t.validation.invalidEmail;
     }
 
     if (!formData.password.trim()) {
-      newErrors.password = '请输入密码';
+      newErrors.password = t.validation.required;
     } else if (formData.password.length < 6) {
-      newErrors.password = '密码至少需要6个字符';
+      newErrors.password = t.validation.minLength;
     }
 
     if (!isLogin) {
       if (!formData.name.trim()) {
-        newErrors.name = '请输入姓名';
+        newErrors.name = t.validation.required;
       }
-      
+
       if (!formData.phone.trim()) {
-        newErrors.phone = '请输入电话号码';
+        newErrors.phone = t.validation.required;
       }
-      
+
       if (formData.password !== formData.confirmPassword) {
-        newErrors.confirmPassword = '密码确认不匹配';
+        newErrors.confirmPassword = t.validation.passwordMismatch;
       }
     }
 
@@ -107,11 +107,11 @@ export function AuthForm({ onLogin }: AuthFormProps) {
 
     try {
       if (isLogin) {
-        // 登录
+        // Login
         const response = await api.login(formData.email, formData.password);
         onLogin(response.user);
       } else {
-        // 注册
+        // Register
         const response = await api.register({
           name: formData.name,
           email: formData.email,
@@ -456,11 +456,11 @@ export function AuthForm({ onLogin }: AuthFormProps) {
           </button>
         </div>
 
-        {/* 角色选择（仅注册时显示） */}
+        {/* Role selection (only shown during registration) */}
         {!isLogin && (
           <div style={{ marginBottom: '1.5rem' }}>
             <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.5rem' }}>
-              选择身份
+              {t.auth.role}
             </label>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
               <button
@@ -474,7 +474,7 @@ export function AuthForm({ onLogin }: AuthFormProps) {
                   cursor: 'pointer'
                 }}
               >
-                👤 客户
+                👤 {t.auth.customer}
               </button>
               <button
                 type="button"
@@ -487,18 +487,18 @@ export function AuthForm({ onLogin }: AuthFormProps) {
                   cursor: 'pointer'
                 }}
               >
-                🚗 司机
+                🚗 {t.auth.driver}
               </button>
             </div>
           </div>
         )}
 
         <form onSubmit={handleSubmit} style={{ marginBottom: '1.5rem' }}>
-          {/* 姓名（仅注册时显示） */}
+          {/* Name (only shown during registration) */}
           {!isLogin && (
             <div style={{ marginBottom: '1rem' }}>
               <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.25rem' }}>
-                姓名 *
+                {t.auth.name} *
               </label>
               <input
                 type="text"
@@ -511,7 +511,7 @@ export function AuthForm({ onLogin }: AuthFormProps) {
                   borderRadius: '0.5rem',
                   fontSize: '1rem'
                 }}
-                placeholder="请输入您的姓名"
+                placeholder={t.placeholders.name}
               />
               {errors.name && (
                 <p style={{ color: '#ef4444', fontSize: '0.875rem', marginTop: '0.25rem' }}>{errors.name}</p>
@@ -519,10 +519,10 @@ export function AuthForm({ onLogin }: AuthFormProps) {
             </div>
           )}
 
-          {/* 邮箱 */}
+          {/* Email */}
           <div style={{ marginBottom: '1rem' }}>
             <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.25rem' }}>
-              邮箱地址 *
+              {t.auth.email} *
             </label>
             <input
               type="email"
@@ -535,18 +535,18 @@ export function AuthForm({ onLogin }: AuthFormProps) {
                 borderRadius: '0.5rem',
                 fontSize: '1rem'
               }}
-              placeholder="your.email@example.com"
+              placeholder={t.placeholders.email}
             />
             {errors.email && (
               <p style={{ color: '#ef4444', fontSize: '0.875rem', marginTop: '0.25rem' }}>{errors.email}</p>
             )}
           </div>
 
-          {/* 电话（仅注册时显示） */}
+          {/* Phone (only shown during registration) */}
           {!isLogin && (
             <div style={{ marginBottom: '1rem' }}>
               <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.25rem' }}>
-                电话号码 *
+                {t.auth.phone} *
               </label>
               <input
                 type="tel"
@@ -559,7 +559,7 @@ export function AuthForm({ onLogin }: AuthFormProps) {
                   borderRadius: '0.5rem',
                   fontSize: '1rem'
                 }}
-                placeholder="+41 79 123 4567"
+                placeholder={t.placeholders.phone}
               />
               {errors.phone && (
                 <p style={{ color: '#ef4444', fontSize: '0.875rem', marginTop: '0.25rem' }}>{errors.phone}</p>
@@ -567,10 +567,10 @@ export function AuthForm({ onLogin }: AuthFormProps) {
             </div>
           )}
 
-          {/* 密码 */}
+          {/* Password */}
           <div style={{ marginBottom: '1rem' }}>
             <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.25rem' }}>
-              密码 *
+              {t.auth.password} *
             </label>
             <input
               type="password"
@@ -583,18 +583,18 @@ export function AuthForm({ onLogin }: AuthFormProps) {
                 borderRadius: '0.5rem',
                 fontSize: '1rem'
               }}
-              placeholder="请输入密码"
+              placeholder={t.placeholders.password}
             />
             {errors.password && (
               <p style={{ color: '#ef4444', fontSize: '0.875rem', marginTop: '0.25rem' }}>{errors.password}</p>
             )}
           </div>
 
-          {/* 确认密码（仅注册时显示） */}
+          {/* Confirm Password (only shown during registration) */}
           {!isLogin && (
             <div style={{ marginBottom: '1rem' }}>
               <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.25rem' }}>
-                确认密码 *
+                {t.auth.confirmPassword} *
               </label>
               <input
                 type="password"
@@ -607,7 +607,7 @@ export function AuthForm({ onLogin }: AuthFormProps) {
                   borderRadius: '0.5rem',
                   fontSize: '1rem'
                 }}
-                placeholder="请再次输入密码"
+                placeholder={t.placeholders.password}
               />
               {errors.confirmPassword && (
                 <p style={{ color: '#ef4444', fontSize: '0.875rem', marginTop: '0.25rem' }}>{errors.confirmPassword}</p>
@@ -645,7 +645,7 @@ export function AuthForm({ onLogin }: AuthFormProps) {
               fontWeight: '500'
             }}
           >
-            {isLoading ? '处理中...' : (isLogin ? '登录' : '注册')}
+            {isLoading ? t.common.loading : (isLogin ? t.auth.login : t.auth.register)}
           </button>
         </form>
 
@@ -705,7 +705,7 @@ export function AuthForm({ onLogin }: AuthFormProps) {
                 <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
               </svg>
-              使用 Google 登录
+              {t.auth.googleLogin}
             </button>
           </div>
         )}
@@ -713,7 +713,7 @@ export function AuthForm({ onLogin }: AuthFormProps) {
         {/* 切换登录/注册 */}
         <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
           <p style={{ fontSize: '0.875rem', color: '#6b7280' }}>
-            {isLogin ? '还没有账户？' : '已有账户？'}
+            {isLogin ? t.auth.noAccount : t.auth.alreadyHaveAccount}
             <button
               type="button"
               onClick={() => setIsLogin(!isLogin)}
@@ -728,7 +728,7 @@ export function AuthForm({ onLogin }: AuthFormProps) {
                 textDecoration: 'underline'
               }}
             >
-              {isLogin ? '立即注册' : '立即登录'}
+              {isLogin ? t.auth.registerNow : t.auth.loginNow}
             </button>
           </p>
         </div>

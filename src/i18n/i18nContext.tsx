@@ -16,7 +16,7 @@ interface I18nProviderProps {
 }
 
 export function I18nProvider({ children }: I18nProviderProps) {
-  // 从localStorage获取保存的语言设置，默认为中文
+  // Get saved language setting from localStorage, default to Chinese
   const [language, setLanguage] = useState<Language>(() => {
     const saved = localStorage.getItem('language');
     return (saved as Language) || 'zh';
