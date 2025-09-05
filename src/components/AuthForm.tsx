@@ -125,40 +125,118 @@ export function AuthForm({ onLogin }: AuthFormProps) {
     }
   };
 
-  const handleDemoLogin = async (role: 'customer' | 'driver') => {
-    setIsLoading(true);
-    try {
-      const email = role === 'customer' ? 'customer@example.com' : 'hans.mueller@example.com';
-      const response = await api.login(email, 'password123');
-      onLogin(response.user);
-    } catch (error: any) {
-      setErrors({ general: error.message || '演示登录失败' });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+
 
   return (
-    <div style={{ 
-      minHeight: '100vh', 
-      display: 'flex', 
-      alignItems: 'center', 
+    <div style={{
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: '#f3f4f6',
+      background: 'linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab)',
+      backgroundSize: '400% 400%',
+      animation: 'gradientShift 15s ease infinite',
       fontFamily: 'Arial, sans-serif',
-      padding: '1rem'
+      padding: '1rem',
+      position: 'relative',
+      overflow: 'hidden'
     }}>
-      <div style={{ 
-        backgroundColor: 'white', 
-        padding: '2rem', 
-        borderRadius: '0.5rem', 
-        boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-        maxWidth: '400px',
-        width: '100%'
+      {/* 动态背景元素 */}
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: `
+          radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+          radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+          radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.3) 0%, transparent 50%)
+        `,
+        animation: 'float 20s ease-in-out infinite'
+      }} />
+
+      {/* 浮动圆圈 */}
+      <div style={{
+        position: 'absolute',
+        width: '300px',
+        height: '300px',
+        borderRadius: '50%',
+        background: 'rgba(255, 255, 255, 0.1)',
+        top: '10%',
+        left: '10%',
+        animation: 'bounce 25s ease-in-out infinite'
+      }} />
+      <div style={{
+        position: 'absolute',
+        width: '200px',
+        height: '200px',
+        borderRadius: '50%',
+        background: 'rgba(255, 255, 255, 0.05)',
+        bottom: '10%',
+        right: '10%',
+        animation: 'bounce 20s ease-in-out infinite reverse'
+      }} />
+
+      <style>{`
+        @keyframes gradientShift {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+
+        @keyframes float {
+          0%, 100% { transform: translateY(0px) rotate(0deg); }
+          33% { transform: translateY(-30px) rotate(120deg); }
+          66% { transform: translateY(30px) rotate(240deg); }
+        }
+
+        @keyframes bounce {
+          0%, 100% { transform: translateY(0px) scale(1); }
+          50% { transform: translateY(-50px) scale(1.1); }
+        }
+      `}</style>
+      <div style={{
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        backdropFilter: 'blur(20px)',
+        padding: '2.5rem',
+        borderRadius: '1rem',
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.2)',
+        maxWidth: '420px',
+        width: '100%',
+        position: 'relative',
+        zIndex: 10,
+        border: '1px solid rgba(255, 255, 255, 0.2)'
       }}>
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <h1 style={{ color: '#2563eb', marginBottom: '0.5rem' }}>EasyMove Zurich</h1>
-          <p style={{ color: '#6b7280' }}>苏黎世接机服务平台</p>
+          <div style={{
+            fontSize: '3.5rem',
+            marginBottom: '0.5rem',
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text'
+          }}>🚗</div>
+          <h1 style={{
+            fontSize: '2rem',
+            fontWeight: '800',
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+            margin: 0,
+            marginBottom: '0.5rem'
+          }}>
+            EasyMove Zurich
+          </h1>
+          <p style={{
+            color: '#6b7280',
+            margin: 0,
+            fontSize: '1rem',
+            fontWeight: '500'
+          }}>
+            苏黎世专业接机服务平台
+          </p>
         </div>
 
         {/* 切换登录/注册 */}
@@ -407,30 +485,34 @@ export function AuthForm({ onLogin }: AuthFormProps) {
               disabled={isLoading}
               style={{
                 width: '100%',
-                backgroundColor: 'white',
+                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                backdropFilter: 'blur(10px)',
                 color: '#374151',
                 padding: '0.75rem',
-                border: '1px solid #d1d5db',
-                borderRadius: '0.5rem',
+                border: '1px solid rgba(255, 255, 255, 0.3)',
+                borderRadius: '0.75rem',
                 fontSize: '1rem',
-                fontWeight: '500',
+                fontWeight: '600',
                 cursor: isLoading ? 'not-allowed' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '0.5rem',
-                transition: 'all 0.2s'
+                gap: '0.75rem',
+                transition: 'all 0.3s ease',
+                boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)'
               }}
               onMouseOver={(e) => {
                 if (!isLoading) {
-                  e.currentTarget.style.backgroundColor = '#f9fafb';
-                  e.currentTarget.style.borderColor = '#9ca3af';
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.95)';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.15)';
                 }
               }}
               onMouseOut={(e) => {
                 if (!isLoading) {
-                  e.currentTarget.style.backgroundColor = 'white';
-                  e.currentTarget.style.borderColor = '#d1d5db';
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
+                  e.currentTarget.style.transform = 'translateY(0px)';
+                  e.currentTarget.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.1)';
                 }
               }}
             >
@@ -445,41 +527,27 @@ export function AuthForm({ onLogin }: AuthFormProps) {
           </div>
         )}
 
-        {/* 演示登录 */}
-        <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '1.5rem' }}>
-          <p style={{ fontSize: '0.875rem', color: '#6b7280', textAlign: 'center', marginBottom: '1rem' }}>
-            快速体验演示
+        {/* 切换登录/注册 */}
+        <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
+          <p style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+            {isLogin ? '还没有账户？' : '已有账户？'}
+            <button
+              type="button"
+              onClick={() => setIsLogin(!isLogin)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#2563eb',
+                cursor: 'pointer',
+                fontSize: '0.875rem',
+                fontWeight: '500',
+                marginLeft: '0.25rem',
+                textDecoration: 'underline'
+              }}
+            >
+              {isLogin ? '立即注册' : '立即登录'}
+            </button>
           </p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-            <button
-              onClick={() => handleDemoLogin('customer')}
-              disabled={isLoading}
-              style={{
-                padding: '0.5rem',
-                backgroundColor: '#f3f4f6',
-                border: '1px solid #d1d5db',
-                borderRadius: '0.5rem',
-                cursor: isLoading ? 'not-allowed' : 'pointer',
-                fontSize: '0.875rem'
-              }}
-            >
-              👤 客户演示
-            </button>
-            <button
-              onClick={() => handleDemoLogin('driver')}
-              disabled={isLoading}
-              style={{
-                padding: '0.5rem',
-                backgroundColor: '#f3f4f6',
-                border: '1px solid #d1d5db',
-                borderRadius: '0.5rem',
-                cursor: isLoading ? 'not-allowed' : 'pointer',
-                fontSize: '0.875rem'
-              }}
-            >
-              🚗 司机演示
-            </button>
-          </div>
         </div>
       </div>
     </div>
