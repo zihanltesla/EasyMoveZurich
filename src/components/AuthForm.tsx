@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
+import { useTranslation } from '../i18n/i18nContext';
+import { LanguageSwitcher } from './LanguageSwitcher';
 
 interface AuthFormProps {
   onLogin: (user: any) => void;
 }
 
 export function AuthForm({ onLogin }: AuthFormProps) {
+  const { t } = useTranslation();
   const [isLogin, setIsLogin] = useState(true);
   const [userRole, setUserRole] = useState<'customer' | 'driver'>('customer');
   const [formData, setFormData] = useState({
@@ -26,7 +29,7 @@ export function AuthForm({ onLogin }: AuthFormProps) {
     const authError = urlParams.get('error');
 
     if (authError) {
-      setErrors({ general: 'Google登录失败，请重试' });
+      setErrors({ general: t.validation.loginFailed });
       window.history.replaceState({}, document.title, window.location.pathname);
       return;
     }
@@ -40,10 +43,10 @@ export function AuthForm({ onLogin }: AuthFormProps) {
         window.history.replaceState({}, document.title, window.location.pathname);
       } catch (error) {
         console.error('解析Google登录数据失败:', error);
-        setErrors({ general: '登录数据解析失败' });
+        setErrors({ general: t.validation.serverError });
       }
     }
-  }, [onLogin]);
+  }, [onLogin, t.validation.loginFailed, t.validation.serverError]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -119,7 +122,7 @@ export function AuthForm({ onLogin }: AuthFormProps) {
         onLogin(response.user);
       }
     } catch (error: any) {
-      setErrors({ general: error.message || '操作失败，请重试' });
+      setErrors({ general: error.message || t.validation.serverError });
     } finally {
       setIsLoading(false);
     }
@@ -324,6 +327,16 @@ export function AuthForm({ onLogin }: AuthFormProps) {
         animation: 'pulse 2s ease-in-out infinite'
       }} />
 
+      {/* 语言切换器 */}
+      <div style={{
+        position: 'absolute',
+        top: '2rem',
+        right: '2rem',
+        zIndex: 20
+      }}>
+        <LanguageSwitcher />
+      </div>
+
       <style>{`
         @keyframes gradientShift {
           0% { background-position: 0% 50%; }
@@ -397,7 +410,7 @@ export function AuthForm({ onLogin }: AuthFormProps) {
             margin: 0,
             marginBottom: '0.5rem'
           }}>
-            EasyMove Zurich
+            {t.app.title}
           </h1>
           <p style={{
             color: '#6b7280',
@@ -405,7 +418,7 @@ export function AuthForm({ onLogin }: AuthFormProps) {
             fontSize: '1rem',
             fontWeight: '500'
           }}>
-            苏黎世专业接机服务平台
+            {t.app.subtitle}
           </p>
         </div>
 
@@ -424,7 +437,7 @@ export function AuthForm({ onLogin }: AuthFormProps) {
               fontWeight: isLogin ? '500' : 'normal'
             }}
           >
-            登录
+            {t.auth.login}
           </button>
           <button
             onClick={() => setIsLogin(false)}
@@ -439,7 +452,7 @@ export function AuthForm({ onLogin }: AuthFormProps) {
               fontWeight: !isLogin ? '500' : 'normal'
             }}
           >
-            注册
+            {t.auth.register}
           </button>
         </div>
 

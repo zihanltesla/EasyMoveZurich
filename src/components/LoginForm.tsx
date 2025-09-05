@@ -82,7 +82,7 @@ export function LoginForm({ onLogin }: LoginFormProps) {
             <Car className="h-8 w-8 text-white" />
           </div>
           <h2 className="mt-6 text-3xl font-bold text-gray-900">
-            EasyMove Zurich
+            EasyMove Swiss
           </h2>
           <p className="mt-2 text-sm text-gray-600">
             您的专业接机服务平台

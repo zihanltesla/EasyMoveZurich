@@ -5,6 +5,7 @@ import { CreateOrderForm } from './components/CreateOrderForm';
 import { OrderListView } from './components/OrderListView';
 import { api } from './services/api';
 import { DriverDashboard } from './components/DriverDashboard';
+import { I18nProvider } from './i18n/i18nContext';
 
 interface User {
   id: string;
@@ -14,7 +15,7 @@ interface User {
   role: string;
 }
 
-function App() {
+function AppContent() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [currentView, setCurrentView] = useState<'dashboard' | 'profile' | 'create-order' | 'orders' | 'driver-dashboard'>('dashboard');
   const [isLoading, setIsLoading] = useState(true);
@@ -318,6 +319,14 @@ function App() {
         </div>
       </div>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <I18nProvider>
+      <AppContent />
+    </I18nProvider>
   );
 }
 
