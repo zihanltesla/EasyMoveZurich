@@ -156,26 +156,172 @@ export function AuthForm({ onLogin }: AuthFormProps) {
         animation: 'float 20s ease-in-out infinite'
       }} />
 
-      {/* 浮动圆圈 */}
+      {/* 科技感几何元素 */}
+      {/* 六边形网格 */}
       <div style={{
         position: 'absolute',
-        width: '300px',
-        height: '300px',
-        borderRadius: '50%',
-        background: 'rgba(255, 255, 255, 0.1)',
-        top: '10%',
-        left: '10%',
-        animation: 'bounce 25s ease-in-out infinite'
+        top: '5%',
+        left: '5%',
+        width: '100px',
+        height: '100px',
+        background: 'linear-gradient(45deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05))',
+        clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
+        animation: 'rotate 30s linear infinite'
+      }} />
+
+      {/* 旋转的三角形 */}
+      <div style={{
+        position: 'absolute',
+        top: '15%',
+        right: '10%',
+        width: '80px',
+        height: '80px',
+        background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2))',
+        clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)',
+        animation: 'rotate 20s linear infinite reverse'
+      }} />
+
+      {/* 科技线条 */}
+      <div style={{
+        position: 'absolute',
+        bottom: '20%',
+        left: '8%',
+        width: '150px',
+        height: '2px',
+        background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent)',
+        animation: 'pulse 3s ease-in-out infinite'
       }} />
       <div style={{
         position: 'absolute',
-        width: '200px',
-        height: '200px',
-        borderRadius: '50%',
-        background: 'rgba(255, 255, 255, 0.05)',
+        bottom: '25%',
+        left: '12%',
+        width: '100px',
+        height: '2px',
+        background: 'linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.8), transparent)',
+        animation: 'pulse 3s ease-in-out infinite 1s'
+      }} />
+
+      {/* 方形网格 */}
+      <div style={{
+        position: 'absolute',
         bottom: '10%',
-        right: '10%',
-        animation: 'bounce 20s ease-in-out infinite reverse'
+        right: '15%',
+        width: '60px',
+        height: '60px',
+        border: '2px solid rgba(255,255,255,0.2)',
+        background: 'rgba(255,255,255,0.05)',
+        transform: 'rotate(45deg)',
+        animation: 'float 15s ease-in-out infinite'
+      }} />
+
+      {/* 小粒子效果 */}
+      <div style={{
+        position: 'absolute',
+        top: '30%',
+        left: '20%',
+        width: '4px',
+        height: '4px',
+        borderRadius: '50%',
+        background: 'rgba(255,255,255,0.8)',
+        animation: 'twinkle 2s ease-in-out infinite'
+      }} />
+      <div style={{
+        position: 'absolute',
+        top: '60%',
+        right: '25%',
+        width: '3px',
+        height: '3px',
+        borderRadius: '50%',
+        background: 'rgba(102, 126, 234, 0.9)',
+        animation: 'twinkle 2.5s ease-in-out infinite 0.5s'
+      }} />
+      <div style={{
+        position: 'absolute',
+        top: '45%',
+        left: '80%',
+        width: '5px',
+        height: '5px',
+        borderRadius: '50%',
+        background: 'rgba(118, 75, 162, 0.8)',
+        animation: 'twinkle 3s ease-in-out infinite 1s'
+      }} />
+
+      {/* 数字雨效果线条 */}
+      <div style={{
+        position: 'absolute',
+        top: '0',
+        left: '25%',
+        width: '1px',
+        height: '100%',
+        background: 'linear-gradient(180deg, transparent, rgba(255,255,255,0.3), transparent)',
+        animation: 'slideDown 8s linear infinite'
+      }} />
+      <div style={{
+        position: 'absolute',
+        top: '0',
+        right: '30%',
+        width: '1px',
+        height: '100%',
+        background: 'linear-gradient(180deg, transparent, rgba(102, 126, 234, 0.4), transparent)',
+        animation: 'slideDown 10s linear infinite 2s'
+      }} />
+
+      {/* 电路板风格连接线 */}
+      <div style={{
+        position: 'absolute',
+        top: '20%',
+        left: '0',
+        width: '200px',
+        height: '1px',
+        background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), rgba(102, 126, 234, 0.6), transparent)',
+        animation: 'pulse 4s ease-in-out infinite'
+      }} />
+      <div style={{
+        position: 'absolute',
+        top: '20%',
+        left: '180px',
+        width: '1px',
+        height: '80px',
+        background: 'linear-gradient(180deg, rgba(102, 126, 234, 0.6), transparent)',
+        animation: 'pulse 4s ease-in-out infinite 0.5s'
+      }} />
+
+      {/* 科技感圆环 */}
+      <div style={{
+        position: 'absolute',
+        bottom: '15%',
+        left: '5%',
+        width: '120px',
+        height: '120px',
+        borderRadius: '50%',
+        border: '2px solid rgba(255,255,255,0.2)',
+        background: 'radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%)',
+        animation: 'rotate 25s linear infinite'
+      }}>
+        <div style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          width: '60px',
+          height: '60px',
+          marginTop: '-30px',
+          marginLeft: '-30px',
+          borderRadius: '50%',
+          border: '1px solid rgba(102, 126, 234, 0.4)',
+          animation: 'rotate 15s linear infinite reverse'
+        }} />
+      </div>
+
+      {/* 数据流动效果 */}
+      <div style={{
+        position: 'absolute',
+        top: '70%',
+        right: '5%',
+        width: '100px',
+        height: '20px',
+        background: 'linear-gradient(90deg, transparent, rgba(118, 75, 162, 0.3), rgba(102, 126, 234, 0.5), transparent)',
+        borderRadius: '10px',
+        animation: 'pulse 2s ease-in-out infinite'
       }} />
 
       <style>{`
@@ -191,9 +337,33 @@ export function AuthForm({ onLogin }: AuthFormProps) {
           66% { transform: translateY(30px) rotate(240deg); }
         }
 
-        @keyframes bounce {
-          0%, 100% { transform: translateY(0px) scale(1); }
-          50% { transform: translateY(-50px) scale(1.1); }
+        @keyframes rotate {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+          0%, 100% { opacity: 0.3; transform: scaleX(0.8); }
+          50% { opacity: 1; transform: scaleX(1.2); }
+        }
+
+        @keyframes twinkle {
+          0%, 100% { opacity: 0.3; transform: scale(0.8); }
+          50% { opacity: 1; transform: scale(1.5); }
+        }
+
+        @keyframes slideDown {
+          0% { transform: translateY(-100vh); opacity: 0; }
+          10% { opacity: 1; }
+          90% { opacity: 1; }
+          100% { transform: translateY(100vh); opacity: 0; }
+        }
+
+        @keyframes matrixRain {
+          0% { transform: translateY(-100px); opacity: 0; }
+          10% { opacity: 1; }
+          90% { opacity: 1; }
+          100% { transform: translateY(calc(100vh + 100px)); opacity: 0; }
         }
       `}</style>
       <div style={{
